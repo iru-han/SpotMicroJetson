@@ -31,6 +31,8 @@ def reset():
 def getRobotClass(engine):
     if engine == "mujoco":
         from spotmicroai_mujoco import Robot
+    elif engine == "genesis":
+        from spotmicroai_genesis import Robot
     else:
         from environment import environment
         environment()
@@ -69,10 +71,11 @@ def main(id, command_status, engine="pybullet"):
 
     resetPose()
     trotting = TrottingGait(robot)
-    if engine == "mujoco":
-        # Lower step height only for MuJoCo: its stiffer/coarser touchdown
-        # dynamics make the default 60mm lift land noticeably harder than
-        # in PyBullet. PyBullet keeps the original default untouched.
+    if engine in ("mujoco", "genesis"):
+        # Lower step height only for the MJCF-based engines: their
+        # stiffer/coarser touchdown dynamics make the default 60mm lift land
+        # noticeably harder than in PyBullet. PyBullet keeps the original
+        # default untouched.
         robot.setUserDebugParameter(trotting.IDstepHeight, 30.0)
 
     s=False
@@ -113,7 +116,7 @@ def main(id, command_status, engine="pybullet"):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("--engine", choices=["pybullet", "mujoco"], default="pybullet",
+    parser.add_argument("--engine", choices=["pybullet", "mujoco", "genesis"], default="pybullet",
                         help="Physics engine to run the simulation with")
     args = parser.parse_args()
 

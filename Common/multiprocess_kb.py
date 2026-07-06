@@ -31,9 +31,9 @@ class KeyInterrupt():
             self.X_STEP = 10.0
             self.Y_STEP = 5.0
             self.YAW_STEP = 3.0
-        elif engine == "mujoco":
+        elif engine in ("mujoco", "genesis"):
             # Same mm-scale units as pybullet (shared Kinematic()/Lp code) —
-            # don't confuse this with MuJoCo's own meter-scale MJCF geometry.
+            # don't confuse this with the MJCF's own meter-scale geometry.
             self.X_STEP = 35.0
             self.Y_STEP = 15.0
             self.YAW_STEP = 10.0

@@ -4,5 +4,9 @@ matplotlib>=3.5.0
 numpy>=1.21.0
 pybullet==3.0.6
 mujoco>=3.0.0
+genesis-world>=1.2.0
+# torch: on a non-NVIDIA machine install the CPU wheel explicitly first:
+#   pip install torch --index-url https://download.pytorch.org/whl/cpu
+torch
 keyboard>=0.13.5
 scipy>=1.7.0
