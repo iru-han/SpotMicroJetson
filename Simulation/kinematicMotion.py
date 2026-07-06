@@ -129,12 +129,10 @@ class TrottingGait:
         endLp=np.array([x+self.Sl/2,y,z+self.Sw/2,1])
         
         if(t<self.t0): # stay on ground
-            print("stay")
             return startLp
         elif(t<self.t0+self.t1): # drag foot over ground
-            print("drag")
             td=t-self.t0
-            tp=1/(self.t1/td)
+            tp=td/self.t1  # equivalent to 1/(t1/td) but doesn't blow up at td==0
             diffLp=endLp-startLp
             curLp=startLp+diffLp*tp
 
@@ -145,12 +143,10 @@ class TrottingGait:
             curLp=Ry.dot(curLp)
             return curLp
         elif(t<self.t0+self.t1+self.t2): # stay on ground again
-            print("stay")
             return endLp
         elif(t<self.t0+self.t1+self.t2+self.t3): # Lift foot
-            print("lift")
             td=t-(self.t0+self.t1+self.t2)
-            tp=1/(self.t3/td)
+            tp=td/self.t3  # equivalent to 1/(t3/td) but doesn't blow up at td==0
             diffLp=startLp-endLp
             curLp=endLp+diffLp*tp
             curLp[1]+=self.Sh*math.sin(math.pi*tp)
@@ -189,7 +185,6 @@ class TrottingGait:
         Fx=self.params.readUserDebugParameter(self.IDfrontOffset)
         Rx=-self.params.readUserDebugParameter(self.IDrearOffset)
 
-        print(td, t2, rt2, rtd)
         Fy=-100
         Ry=-100
         r=np.array([self.calcLeg(td,Fx,Fy,spf),self.calcLeg(t2,Fx,Fy,-spf),self.calcLeg(rt2,Rx,Ry,spr),self.calcLeg(rtd,Rx,Ry,-spr)])

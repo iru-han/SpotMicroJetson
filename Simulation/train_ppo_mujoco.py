@@ -34,7 +34,8 @@ class RewardComponentLoggingCallback(BaseCallback):
 
     KEYS = ("reward_tracking", "reward_lin_vel_z", "reward_ang_vel_xy", "reward_orientation",
             "reward_torque", "reward_dof_vel", "reward_dof_acc", "reward_action_rate",
-            "reward_dof_pos_limits", "reward_base_height", "vel_error")
+            "reward_dof_pos_limits", "reward_base_height", "reward_foot_slip",
+            "reward_feet_air_time", "reward_stuck_leg", "reward_imitation", "vel_error")
 
     def _on_step(self):
         for info in self.locals.get("infos", []):
