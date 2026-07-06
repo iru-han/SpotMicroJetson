@@ -7,6 +7,7 @@ from os import system, name
 import sys
 sys.path.append("..")
 
+import argparse
 import matplotlib.animation as animation
 import numpy as np
 import time
@@ -15,12 +16,6 @@ import datetime as dt
 import keyboard
 import random
 
-from environment import environment
-import pybullet as p
-import pybullet_data
-
-import spotmicroai
-
 from multiprocessing import Process
 from Common.multiprocess_kb import KeyInterrupt
 
@@ -28,11 +23,19 @@ import kinematics as kn
 from kinematicMotion import KinematicMotion, TrottingGait
 
 rtime=time.time()
-env=environment()
 
 def reset():
     global rtime
     rtime=time.time()
+
+def getRobotClass(engine):
+    if engine == "mujoco":
+        from spotmicroai_mujoco import Robot
+    else:
+        from environment import environment
+        environment()
+        from spotmicroai import Robot
+    return Robot
 
 def resetPose():
     # TODO: globals are bad
@@ -50,9 +53,10 @@ def consoleClear():
     else:
         _ = system('clear')
 
-def main(id, command_status):
+def main(id, command_status, engine="pybullet"):
     # Initialize robot and variables inside main function to avoid duplicate GUI
-    robot = spotmicroai.Robot(False, True, reset)
+    RobotClass = getRobotClass(engine)
+    robot = RobotClass(False, True, reset)
 
     spurWidth = robot.W/2+20
     stepLength = 0
@@ -60,20 +64,22 @@ def main(id, command_status):
     iXf = 120
     iXb = -132
 
-    IDheight = p.addUserDebugParameter("height", -40, 90, 20)
-
     Lp = np.array([[iXf, -100, spurWidth, 1], [iXf, -100, -spurWidth, 1],
     [-50, -100, spurWidth, 1], [-50, -100, -spurWidth, 1]])
 
     resetPose()
-    trotting = TrottingGait()
+    trotting = TrottingGait(robot)
+    if engine == "mujoco":
+        # Lower step height only for MuJoCo: its stiffer/coarser touchdown
+        # dynamics make the default 60mm lift land noticeably harder than
+        # in PyBullet. PyBullet keeps the original default untouched.
+        robot.setUserDebugParameter(trotting.IDstepHeight, 30.0)
 
     s=False
 
     while True:
         bodyPos=robot.getPos()
-        bodyOrn,_,_=robot.getIMU()
-        xr,yr,_= p.getEulerFromQuaternion(bodyOrn)
+        xr,yr,_,_,_=robot.getIMU()
         distance=math.sqrt(bodyPos[0]**2+bodyPos[1]**2)
 
         if distance>50:
@@ -82,7 +88,7 @@ def main(id, command_status):
         ir=xr/(math.pi/180)
 
         d=time.time()-rtime
-        height = p.readUserDebugParameter(IDheight)
+        height = robot.getHeightParam()
 
         # calculate robot step command from keyboard inputs
         result_dict = command_status.get()
@@ -106,15 +112,20 @@ def main(id, command_status):
         consoleClear()
 
 if __name__ == "__main__":
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--engine", choices=["pybullet", "mujoco"], default="pybullet",
+                        help="Physics engine to run the simulation with")
+    args = parser.parse_args()
+
     try:
         # Keyboard input Process
-        KeyInputs = KeyInterrupt()
+        KeyInputs = KeyInterrupt(args.engine)
         KeyProcess = Process(target=KeyInputs.keyInterrupt, args=(1, KeyInputs.key_status, KeyInputs.command_status))
         KeyProcess.start()
 
-        # Main Process 
-        main(2, KeyInputs.command_status)
-        
+        # Main Process
+        main(2, KeyInputs.command_status, args.engine)
+
         print("terminate KeyBoard Input process")
         if KeyProcess.is_alive():
             KeyProcess.terminate()

@@ -3,5 +3,6 @@
 matplotlib>=3.5.0
 numpy>=1.21.0
 pybullet==3.0.6
+mujoco>=3.0.0
 keyboard>=0.13.5
 scipy>=1.7.0

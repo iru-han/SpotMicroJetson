@@ -5,7 +5,20 @@ Includes Walking Mechanism for quadruped robot
 import time
 import numpy as np
 import math
-import pybullet as p
+
+
+class _PyBulletDebugParams:
+    """Falls back to raw PyBullet debug sliders when no robot/engine is given."""
+
+    def __init__(self):
+        import pybullet as p
+        self._p = p
+
+    def addUserDebugParameter(self, name, low, high, default):
+        return self._p.addUserDebugParameter(name, low, high, default)
+
+    def readUserDebugParameter(self, handle):
+        return self._p.readUserDebugParameter(handle)
 
 class KinematicLegMotion:
 
@@ -72,8 +85,12 @@ Each leg has the following "states"
 3 - lift leg by Sh and Sl for t3 back to 0
 """
 class TrottingGait:
-    
-    def __init__(self):
+
+    def __init__(self, params=None):
+        # `params` exposes addUserDebugParameter/readUserDebugParameter (e.g. a
+        # Robot instance). Falls back to raw PyBullet sliders when omitted, to
+        # keep the old no-arg constructor working for existing callers.
+        self.params = params if params is not None else _PyBulletDebugParams()
         self.maxSl=2
         self.bodyPos=(0,100,0)
         self.bodyRot=(0,0,0)
@@ -88,18 +105,18 @@ class TrottingGait:
         self.Spf=87
         self.Spr=77
 
-        self.IDspurFront= p.addUserDebugParameter("spur front", 20, 150, self.Spf)
-        self.IDspurRear= p.addUserDebugParameter("spur rear", 20, 150, self.Spr)
-        self.IDstepLength = p.addUserDebugParameter("step length", -150, 150, self.Sl)
-        self.IDstepWidth = p.addUserDebugParameter("step width", -150, 150, self.Sw)
-        self.IDstepHeight = p.addUserDebugParameter("step height", 0, 150, self.Sh)
-        self.IDstepAlpha = p.addUserDebugParameter("step alpha", -90, 90, self.Sa)
-        self.IDt0 = p.addUserDebugParameter("t0", 0, 1000, self.t0)
-        self.IDt1 = p.addUserDebugParameter("t1", 0, 1000, self.t1)
-        self.IDt2 = p.addUserDebugParameter("t2", 0, 1000, self.t2)
-        self.IDt3 = p.addUserDebugParameter("t3", 0, 1000, self.t3)
-        self.IDfrontOffset = p.addUserDebugParameter("front Offset", 0,200, 120)
-        self.IDrearOffset = p.addUserDebugParameter("rear Offset", 0,200, 50)
+        self.IDspurFront= self.params.addUserDebugParameter("spur front", 20, 150, self.Spf)
+        self.IDspurRear= self.params.addUserDebugParameter("spur rear", 20, 150, self.Spr)
+        self.IDstepLength = self.params.addUserDebugParameter("step length", -150, 150, self.Sl)
+        self.IDstepWidth = self.params.addUserDebugParameter("step width", -150, 150, self.Sw)
+        self.IDstepHeight = self.params.addUserDebugParameter("step height", 0, 150, self.Sh)
+        self.IDstepAlpha = self.params.addUserDebugParameter("step alpha", -90, 90, self.Sa)
+        self.IDt0 = self.params.addUserDebugParameter("t0", 0, 1000, self.t0)
+        self.IDt1 = self.params.addUserDebugParameter("t1", 0, 1000, self.t1)
+        self.IDt2 = self.params.addUserDebugParameter("t2", 0, 1000, self.t2)
+        self.IDt3 = self.params.addUserDebugParameter("t3", 0, 1000, self.t3)
+        self.IDfrontOffset = self.params.addUserDebugParameter("front Offset", 0,200, 120)
+        self.IDrearOffset = self.params.addUserDebugParameter("rear Offset", 0,200, 50)
         
         self.Rc=[-50,0,0,1] # rotation center
 
@@ -143,23 +160,23 @@ class TrottingGait:
         self.Sl=len
 
     def positions(self,t,kb_offset={}):
-        spf= p.readUserDebugParameter(self.IDspurFront)
-        spr= p.readUserDebugParameter(self.IDspurRear)
-        self.Sh=p.readUserDebugParameter(self.IDstepHeight)
+        spf= self.params.readUserDebugParameter(self.IDspurFront)
+        spr= self.params.readUserDebugParameter(self.IDspurRear)
+        self.Sh=self.params.readUserDebugParameter(self.IDstepHeight)
         
         # Pybullet
         if list(kb_offset.values()) == [0.0, 0.0, 0.0]:
-            self.Sl=p.readUserDebugParameter(self.IDstepLength)
-            self.Sw=p.readUserDebugParameter(self.IDstepWidth)
-            self.Sa=p.readUserDebugParameter(self.IDstepAlpha)
+            self.Sl=self.params.readUserDebugParameter(self.IDstepLength)
+            self.Sw=self.params.readUserDebugParameter(self.IDstepWidth)
+            self.Sa=self.params.readUserDebugParameter(self.IDstepAlpha)
         else:
             self.Sl=kb_offset['IDstepLength']
             self.Sw=kb_offset['IDstepWidth']
             self.Sa=kb_offset['IDstepAlpha']
-        self.t0=p.readUserDebugParameter(self.IDt0)
-        self.t1=p.readUserDebugParameter(self.IDt1)
-        self.t2=p.readUserDebugParameter(self.IDt2)
-        self.t3=p.readUserDebugParameter(self.IDt3)
+        self.t0=self.params.readUserDebugParameter(self.IDt0)
+        self.t1=self.params.readUserDebugParameter(self.IDt1)
+        self.t2=self.params.readUserDebugParameter(self.IDt2)
+        self.t3=self.params.readUserDebugParameter(self.IDt3)
 
         Tt=(self.t0+self.t1+self.t2+self.t3)
         Tt2=Tt/2
@@ -169,8 +186,8 @@ class TrottingGait:
         rtd=(t*1000)%Tt
         rt2=(t*1000-Tt2)%Tt
         
-        Fx=p.readUserDebugParameter(self.IDfrontOffset)
-        Rx=-p.readUserDebugParameter(self.IDrearOffset)
+        Fx=self.params.readUserDebugParameter(self.IDfrontOffset)
+        Rx=-self.params.readUserDebugParameter(self.IDrearOffset)
 
         print(td, t2, rt2, rtd)
         Fy=-100

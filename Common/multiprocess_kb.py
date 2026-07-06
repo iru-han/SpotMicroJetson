@@ -16,7 +16,7 @@ control_offset = {'IDstepLength': 0.0, 'IDstepWidth': 0.0, 'IDstepAlpha': 0.0, '
 
 class KeyInterrupt(): 
 
-    def __init__(self): 
+    def __init__(self, engine="pybullet"): 
         # How many times Keys Pushed
         self.key_status = Queue()
         self.key_status.put(key_value_default)
@@ -27,9 +27,16 @@ class KeyInterrupt():
 
         # Offsets for Robot Control
         # Search calcRbStep for Usage
-        self.X_STEP = 10.0
-        self.Y_STEP = 5.0
-        self.YAW_STEP = 3.0
+        if engine == "pybullet":
+            self.X_STEP = 10.0
+            self.Y_STEP = 5.0
+            self.YAW_STEP = 3.0
+        elif engine == "mujoco":
+            # Same mm-scale units as pybullet (shared Kinematic()/Lp code) —
+            # don't confuse this with MuJoCo's own meter-scale MJCF geometry.
+            self.X_STEP = 35.0
+            self.Y_STEP = 15.0
+            self.YAW_STEP = 10.0
 
     def resetStatus(self):
         result_dict = self.key_status.get()

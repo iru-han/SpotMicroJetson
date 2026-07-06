@@ -6,4 +6,5 @@
 
 venv/
 env/
+spot_env/
 .env

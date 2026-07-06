@@ -71,6 +71,7 @@ class Robot:
         self.IDkp = p.addUserDebugParameter("Kp", 0, 0.05, self.kp) # 0.05
         self.IDkd = p.addUserDebugParameter("Kd", 0, 1, self.kd) # 0.5
         self.IDmaxForce = p.addUserDebugParameter("MaxForce", 0, 50, 12.5)
+        self.IDheight = p.addUserDebugParameter("height", -40, 90, 20)
 
         p.setRealTimeSimulation(self.useRealTime)
 
@@ -264,10 +265,20 @@ class Robot:
     def getAngle(self):
         return self.angles
 
+    def getHeightParam(self):
+        return p.readUserDebugParameter(self.IDheight)
+
+    def addUserDebugParameter(self, name, low, high, default):
+        return p.addUserDebugParameter(name, low, high, default)
+
+    def readUserDebugParameter(self, handle):
+        return p.readUserDebugParameter(handle)
+
     def getIMU(self):
         _, bodyOrn = p.getBasePositionAndOrientation(self.quadruped)
         linearVel, angularVel = p.getBaseVelocity(self.quadruped)
-        return bodyOrn,linearVel,angularVel
+        roll, pitch, yaw = p.getEulerFromQuaternion(bodyOrn)
+        return roll, pitch, yaw, linearVel, angularVel
 
     def step(self):
 
